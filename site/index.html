@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vitrina</title>
+<meta name="description" content="The apt repository for Editora, Termina, Torrenta, Mirada, Nux and Modula.">
+<style>
+  :root { --bg: #fafaf9; --fg: #1c1917; --muted: #57534e; --code-bg: #f0efed; --border: #e7e5e4; --accent: #b45309; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1c1917; --fg: #f5f5f4; --muted: #a8a29e; --code-bg: #292524; --border: #44403c; --accent: #f59e0b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 system-ui, sans-serif; }
+  main { max-width: 46rem; margin: 0 auto; padding: 3rem 1rem 4rem; }
+  h1 { font-size: 2rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 2.25rem 0 .5rem; }
+  p, li { color: var(--muted); }
+  a { color: var(--accent); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 6px; padding: .9rem 1rem; overflow-x: auto; font-size: .875rem; line-height: 1.5; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; }
+  td code { color: var(--fg); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Vitrina</h1>
+  <p>An apt repository for Debian, Ubuntu and their derivatives. It carries the latest release of each app below, for amd64 and, where the app ships one, arm64.</p>
+
+  <h2>Add the repository</h2>
+<pre><code>sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://vitrina-project.dev/vitrina.asc | sudo tee /etc/apt/keyrings/vitrina.asc &gt; /dev/null
+sudo tee /etc/apt/sources.list.d/vitrina.sources &gt; /dev/null &lt;&lt;'EOF'
+Types: deb
+URIs: https://vitrina-project.dev/apt
+Suites: stable
+Components: main
+Signed-By: /etc/apt/keyrings/vitrina.asc
+EOF
+sudo apt update</code></pre>
+
+  <h2>Install an app</h2>
+<pre><code>sudo apt install editora</code></pre>
+  <p>After that, <code>sudo apt upgrade</code> keeps it up to date.</p>
+
+  <h2>Apps</h2>
+  <table>
+    <thead><tr><th>Package</th><th>App</th></tr></thead>
+    <tbody>
+      <tr><td><code>editora</code></td><td><a href="https://editora-project.dev">Editora</a></td></tr>
+      <tr><td><code>termina</code></td><td><a href="https://termina-project.dev">Termina</a></td></tr>
+      <tr><td><code>torrenta</code></td><td><a href="https://github.com/adriandeleon/torrenta">Torrenta</a></td></tr>
+      <tr><td><code>mirada</code></td><td><a href="https://mirada-project.dev">Mirada</a></td></tr>
+      <tr><td><code>nux</code></td><td><a href="https://github.com/adriandeleon/nux">Nux</a></td></tr>
+      <tr><td><code>modula</code></td><td><a href="https://github.com/adriandeleon/Modula">Modula</a></td></tr>
+    </tbody>
+  </table>
+
+  <h2>Signing key</h2>
+  <p>The repository and the packages are signed with the same release key,
+  fingerprint <code>8486 A7AF 4FC8 FEE9 3D83 CDB4 EA5F A138 C2C0 9C4A</code>.</p>
+</main>
+</body>
+</html>

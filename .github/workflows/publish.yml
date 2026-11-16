@@ -1,0 +1,97 @@
+# Rebuild the apt repository from the apps' latest releases and publish it with GitHub Pages.
+#
+# Runs when an app says it has released (repository_dispatch, see ci/notify-vitrina.yml), once a
+# day in case such a call was missed, on a push that changes the app list, the site or the
+# builder, and by hand.
+name: Publish apt repository
+
+on:
+  repository_dispatch:
+    types: [app-released]
+  schedule:
+    - cron: '43 6 * * *'
+  push:
+    branches: [main]
+    paths: ['apps.txt', 'site/**', 'scripts/**', '.github/workflows/publish.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One build at a time; a newer release makes an older queued build pointless.
+concurrency:
+  group: apt
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install apt-ftparchive
+        run: command -v apt-ftparchive || { sudo apt-get update -qq && sudo apt-get install -y -qq apt-utils; }
+
+      # The same release key the apps sign their .deb files with, so users trust one key.
+      - name: Import signing key
+        env:
+          LINUX_GPG_KEY: ${{ secrets.LINUX_GPG_KEY }}
+        run: |
+          if [ -z "$LINUX_GPG_KEY" ]; then
+            echo "::error title=Signing key missing::LINUX_GPG_KEY is not set; refusing to publish an unsigned repository"
+            exit 1
+          fi
+          echo "$LINUX_GPG_KEY" | gpg --batch --import
+          fpr=$(gpg --list-secret-keys --with-colons | awk -F: '/^fpr/{print $10; exit}')
+          echo "SIGNING_KEY=$fpr" >> "$GITHUB_ENV"
+
+      - name: Download packages
+        env:
+          # Read-only access to public repositories is enough. The workflow token lifts the rate limit.
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/fetch-debs.sh apps.txt debs
+
+      - name: Build repository
+        env:
+          GPG_PASSPHRASE: ${{ secrets.LINUX_GPG_PASSPHRASE }}
+        run: |
+          mkdir -p public
+          cp -r site/. public/
+          scripts/build-apt.sh debs public
+
+      - name: Summary
+        run: |
+          {
+            if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+              echo "Triggered by ${{ github.event.client_payload.repo }} ${{ github.event.client_payload.tag }}"
+              echo
+            fi
+            echo '| Package | Version | Architecture |'
+            echo '|---|---|---|'
+            for f in public/apt/pool/*/*/*/*.deb; do
+              echo "| $(dpkg-deb -f "$f" Package) | $(dpkg-deb -f "$f" Version) | $(dpkg-deb -f "$f" Architecture) |"
+            done
+            echo
+            echo "Site size: $(du -sh public | cut -f1) (GitHub Pages allows 1 GB)"
+          } >> "$GITHUB_STEP_SUMMARY"
+          size=$(du -sm public | cut -f1)
+          if [ "$size" -gt 850 ]; then
+            echo "::warning title=Site near the Pages size limit::${size} MB of 1024"
+          fi
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

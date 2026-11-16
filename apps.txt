@@ -1,0 +1,9 @@
+# The apps published in the Vitrina apt repository, one GitHub repository per line.
+# Every build takes the .deb files attached to each repository's latest release
+# (drafts and pre-releases are skipped). Add a line here to add an app.
+adriandeleon/Editora
+adriandeleon/Termina
+adriandeleon/torrenta
+adriandeleon/Mirada
+adriandeleon/nux
+adriandeleon/Modula
