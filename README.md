@@ -1,6 +1,6 @@
 # Vitrina
 
-The apt repository for Editora, Termina, Torrenta, Mirada, Nux and Modula, served at
+The apt repository for Editora, Termina, Torrenta, Mirada, Nux, Modula and jkit, served at
 <https://vitrina-project.dev>.
 
 Nothing is committed here but the list of apps and the builder. Every build downloads the `.deb`
