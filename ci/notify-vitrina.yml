@@ -11,7 +11,8 @@ name: notify-vitrina
 #
 # Needs VITRINA_TOKEN, a fine-grained token with Contents read/write on adriandeleon/vitrina.
 # Without it, or if the call fails, nothing else is affected and the repository picks the
-# release up within a day.
+# release up within a day. A failed call (a bad or expired token, say) leaves a warning on the
+# run's summary page, so the run stays green but the failure is visible.
 
 on:
   workflow_run:
@@ -39,7 +40,20 @@ jobs:
             echo "::notice::VITRINA_TOKEN is not set; the apt repository picks this release up at its daily rebuild"
             exit 0
           fi
-          gh api repos/adriandeleon/vitrina/dispatches \
-            -f event_type=app-released \
-            -f "client_payload[repo]=${{ github.repository }}" \
-            -f "client_payload[tag]=$TAG"
+          if ! out=$(gh api repos/adriandeleon/vitrina/dispatches \
+                       -f event_type=app-released \
+                       -f "client_payload[repo]=${{ github.repository }}" \
+                       -f "client_payload[tag]=$TAG" 2>&1); then
+            printf '%s\n' "$out"
+            reason=$(printf '%s\n' "$out" | head -n 1)
+            echo "::warning title=Vitrina not notified::Couldn't ask Vitrina to rebuild for $TAG: $reason." \
+              "Check the VITRINA_TOKEN secret; the apt repository picks this release up at its daily rebuild."
+            {
+              echo "### Vitrina not notified"
+              echo
+              echo "Couldn't ask Vitrina to rebuild for \`$TAG\`: \`$reason\`."
+              echo "Check the \`VITRINA_TOKEN\` secret; the apt repository picks this release up at its daily rebuild."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "asked Vitrina to rebuild for $TAG"
